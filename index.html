@@ -1,88 +1,65 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
-<html lang="ko">
+<!DOCTYPE html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="page-title">블랙잭 카드 카운팅 (Hi-Lo)</title>
+    <meta name="description" content="Practice blackjack card counting with the Hi-Lo system. Track counts and get betting suggestions in real time.">
+    <meta name="keywords" content="blackjack, card counting, Hi-Lo system, casino, betting strategy, blackjack practice">
+    <meta name="author" content="Haechan Jung">
+    <meta name="robots" content="index, follow">
+    <!-- Open Graph 메타태그 -->
+    <meta property="og:title" content="Blackjack Card Counting (Hi-Lo) - Practice Tool">
+    <meta property="og:description" content="Practice blackjack card counting with the Hi-Lo system. Real-time count tracking and betting suggestions.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://chanever.github.io/blackjack_counting/">
+    <meta property="og:image" content="https://raw.githubusercontent.com/chanever/blackjack_counting/main/blj.png">
+    <meta property="og:locale" content="en_US">
+    <!-- Twitter Card 메타태그 -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Blackjack Card Counting (Hi-Lo) - Practice Tool">
+    <meta name="twitter:description" content="Practice blackjack card counting with the Hi-Lo system. Real-time count tracking and betting suggestions.">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/chanever/blackjack_counting/main/blj.png">
+    <title id="page-title">Blackjack Card Counting (Hi-Lo) - Practice Tool</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans">
     <div class="container mx-auto p-4 sm:p-6 max-w-3xl">
         <div class="flex justify-end mb-4">
-            <button id="lang-kor" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mx-1 text-base" aria-label="한국어로 전환">KOR</button>
-            <button id="lang-eng" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mx-1 text-base" aria-label="영어로 전환">ENG</button>
+            <button id="lang-kor" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mx-1 text-base" aria-label="Switch to Korean">KOR</button>
+            <button id="lang-eng" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 mx-1 text-base" aria-label="Switch to English">ENG</button>
         </div>
-        <h1 id="main-title" class="text-3xl sm:text-4xl font-bold text-center mb-6">블랙잭 카드 카운팅 (Hi-Lo)</h1>
+        <h1 id="main-title" class="text-3xl sm:text-4xl font-bold text-center mb-6">Blackjack Card Counting (Hi-Lo)</h1>
         <div class="bg-white p-6 rounded-lg shadow-md">
             <div class="mb-4">
-                <label for="deckCount" class="text-lg font-semibold" id="deck-count-label">덱 수 선택: </label>
-                <select id="deckCount" class="border p-2 rounded w-full sm:w-auto text-base" aria-label="덱 수 선택">
-                    <option value="1">1 덱</option>
-                    <option value="2">2 덱</option>
-                    <option value="4">4 덱</option>
-                    <option value="6" selected>6 덱</option>
-                    <option value="8">8 덱</option>
+                <label for="deckCount" class="text-lg font-semibold" id="deck-count-label">Select Number of Decks: </label>
+                <select id="deckCount" class="border p-2 rounded w-full sm:w-auto text-base" aria-label="Select number of decks">
+                    <option value="1">1 Deck</option>
+                    <option value="2">2 Decks</option>
+                    <option value="4">4 Decks</option>
+                    <option value="6" selected>6 Decks</option>
+                    <option value="8">8 Decks</option>
                 </select>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
-                    <p class="text-lg" id="current-count-label">현재 카운트: <span id="count" class="font-bold text-blue-600">0</span></p>
-                    <p class="text-lg" id="cards-left-label">남은 카드: <span id="cardsLeft" class="font-bold text-blue-600">312</span></p>
-                    <p class="text-lg" id="decks-left-label">남은 덱: <span id="decksLeft" class="font-bold text-blue-600">6</span></p>
-                    <p class="text-lg" id="true-count-label">트루 카운트: <span id="trueCount" class="font-bold text-blue-600">0</span></p>
+                    <p class="text-lg" id="current-count-label">Current Count: <span id="count" class="font-bold text-blue-600">0</span></p>
+                    <p class="text-lg" id="cards-left-label">Cards Left: <span id="cardsLeft" class="font-bold text-blue-600">312</span></p>
+                    <p class="text-lg" id="decks-left-label">Decks Left: <span id="decksLeft" class="font-bold text-blue-600">6</span></p>
+                    <p class="text-lg" id="true-count-label">True Count: <span id="trueCount" class="font-bold text-blue-600">0</span></p>
                 </div>
                 <div>
-                    <p class="text-lg text-gray-600" id="bet-suggestion-info">트루 카운트에 따른 제안:</p>
-                    <pre class="text-lg text-gray-600 whitespace-pre-wrap" id="bet-suggestion-details">+2 이상: 베팅 올리기,\n+1: 기본,\n0 이하: 베팅 낮추기 또는 패스</pre>
+                    <p class="text-lg text-gray-600" id="bet-suggestion-info">Based on True Count:</p>
+                    <pre class="text-lg text-gray-600 whitespace-pre-wrap" id="bet-suggestion-details">+2 or higher: Increase bet,\n+1: Normal bet,\n0 or lower: Lower bet or pass</pre>
                 </div>
             </div>
             <div class="text-center mb-6 bg-green-50 p-4 rounded-lg shadow-sm">
-                <p class="text-2xl sm:text-3xl font-bold text-green-800" id="bet-suggestion-label">베팅 제안: <span id="betSuggestion" class="font-bold text-green-600">기본 베팅</span></p>
+                <p class="text-2xl sm:text-3xl font-bold text-green-800" id="bet-suggestion-label">Bet Suggestion: <span id="betSuggestion" class="font-bold text-green-600">Normal Bet</span></p>
             </div>
             <div class="mb-4">
-                <p class="text-base text-gray-600" id="card-info">카드 입력 (2-6: +1, 7-9: 0, 10-A: -1)</p>
+                <p class="text-base text-gray-600" id="card-info">Card Input (2-6: +1, 7-9: 0, 10-A: -1)</p>
                 <div class="flex flex-wrap justify-center gap-3 my-4">
-                    <select id="cardValue" class="border p-3 rounded w-full sm:w-40 text-base" aria-label="카드 선택">
-                        <option value="" id="select-card-option">카드 선택</option>
+                    <select id="cardValue" class="border p-3 rounded w-full sm:w-40 text-base" aria-label="Select card">
+                        <option value="" id="select-card-option">Select Card</option>
                         <option value="2">2</option>
                         <option value="3">3</option>
                         <option value="4">4</option>
@@ -97,53 +74,53 @@
                         <option value="K">K</option>
                         <option value="A">A</option>
                     </select>
-                    <button id="addCard" class="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 text-base">카드 추가</button>
+                    <button id="addCard" class="bg-blue-500 text-white px-6 py-3 rounded hover:bg-blue-600 text-base">Add Card</button>
                 </div>
-                <div id="currentCards" class="text-center text-lg font-bold my-4">입력된 카드: 없음</div>
+                <div id="currentCards" class="text-center text-lg font-bold my-4">Entered Cards: None</div>
                 <div class="text-center">
-                    <button id="showHistory" class="bg-gray-500 text-white px-6 py-3 rounded hover:bg-gray-600 text-base">카드 히스토리 보기</button>
+                    <button id="showHistory" class="bg-gray-500 text-white px-6 py-3 rounded hover:bg-gray-600 text-base">Card Input History</button>
                 </div>
             </div>
             <div class="flex justify-center space-x-4 mb-4">
-                <button id="resetDeck" class="bg-red-500 text-white px-6 py-3 rounded hover:bg-red-600 text-base">덱 리셋</button>
+                <button id="resetDeck" class="bg-red-500 text-white px-6 py-3 rounded hover:bg-red-600 text-base">Reset Deck</button>
             </div>
             <div class="mt-6 bg-yellow-50 p-6 rounded-lg shadow-md text-center">
-                <h2 class="text-xl font-bold text-yellow-800 mb-4" id="donation-title">후원 부탁드립니다!</h2>
-                <p class="text-base text-gray-700 mb-4" id="donation-info">이 프로젝트를 응원해 주세요! 아래 USDT 주소로 후원해 주시면 큰 힘이 됩니다.</p>
+                <h2 class="text-xl font-bold text-yellow-800 mb-4" id="donation-title">Please Support!</h2>
+                <p class="text-base text-gray-700 mb-4" id="donation-info">Support this project! Your donation to the USDT address below would be greatly appreciated.</p>
                 <div class="flex justify-center items-center gap-3">
-                    <span id="usdtAddress" class="bg-gray-100 p-3 rounded text-base font-mono text-gray-800 break-all max-w-[80%] cursor-pointer hover:bg-gray-200 transition-colors" title="클릭하여 주소 복사">0xdAC17F958D2ee523a2206206994597C13D831ec7</span>
-                    <button id="copyAddress" class="bg-yellow-500 text-white px-6 py-3 rounded hover:bg-yellow-600 text-base transform hover:scale-105 active:scale-95 transition-transform">복사</button>
+                    <span id="usdtAddress" class="bg-gray-100 p-3 rounded text-base font-mono text-gray-800 break-all max-w-[80%] cursor-pointer hover:bg-gray-200 transition-colors" title="Click to copy address">0xdAC17F958D2ee523a2206206994597C13D831ec7</span>
+                    <button id="copyAddress" class="bg-yellow-500 text-white px-6 py-3 rounded hover:bg-yellow-600 text-base transform hover:scale-105 active:scale-95 transition-transform">Copy</button>
                 </div>
             </div>
             <div id="historyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
                 <div class="bg-white p-6 rounded-lg max-w-lg w-full max-h-[70vh] overflow-y-auto">
-                    <h2 class="text-xl font-bold mb-4" id="history-title">카드 입력 히스토리</h2>
+                    <h2 class="text-xl font-bold mb-4" id="history-title">Card Input History</h2>
                     <div id="historyContent" class="text-base"></div>
-                    <button id="closeHistory" class="mt-4 bg-gray-500 text-white px-6 py-3 rounded hover:bg-gray-600 text-base">닫기</button>
+                    <button id="closeHistory" class="mt-4 bg-gray-500 text-white px-6 py-3 rounded hover:bg-gray-600 text-base">Close</button>
                 </div>
             </div>
         </div>
         <div class="mt-6 text-center text-gray-700 text-base">
-            <p id="hi-lo-info">Hi-Lo 시스템: 2-6 (+1), 7-9 (0), 10-A (-1)을 세어 남은 덱의 유리함을 추적하세요.</p>
-            <p id="true-count-info">트루 카운트 = 현재 카운트 ÷ 남은 덱 수</p>
+            <p id="hi-lo-info">Hi-Lo System: Count 2-6 (+1), 7-9 (0), 10-A (-1) to track deck advantage.</p>
+            <p id="true-count-info">True Count = Current Count ÷ Decks Left</p>
         </div>
         <footer class="mt-6 text-center text-gray-600 text-base">
             <p>© 2025 Blackjack Card Counting. All Rights Reserved.</p>
-            <p><a href="terms.html" class="text-blue-600 hover:underline">이용 약관(terms)</a></p>
+            <p><a href="terms.html" class="text-blue-600 hover:underline">Terms of Use(이용 약관)</a></p>
         </footer>
     </div>
 
     <script>
         const translations = {
             ko: {
-                pageTitle: '블랙잭 카드 카운팅 (Hi-Lo)',
+                pageTitle: '블랙잭 카드 카운팅 (Hi-Lo) - 연습 도구',
                 mainTitle: '블랙잭 카드 카운팅 (Hi-Lo)',
                 currentCountLabel: '현재 카운트: ',
                 cardsLeftLabel: '남은 카드: ',
                 decksLeftLabel: '남은 덱: ',
-                trueCountLabel: '트루 카운트: ',
+                trueCountLabel: '진짜 카운트: ',
                 betSuggestionLabel: '베팅 제안: ',
-                betSuggestionInfo: '트루 카운트에 따른 제안:',
+                betSuggestionInfo: '진짜 카운트에 따른 제안:',
                 betSuggestionDetails: '+2 이상: 베팅 올리기,\n+1: 기본,\n0 이하: 베팅 낮추기 또는 패스',
                 cardInfo: '카드 입력 (2-6: +1, 7-9: 0, 10-A: -1)',
                 selectCardOption: '카드 선택',
@@ -166,7 +143,7 @@
                 copySuccess: '주소가 복사되었습니다!'
             },
             en: {
-                pageTitle: 'Blackjack Card Counting (Hi-Lo)',
+                pageTitle: 'Blackjack Card Counting (Hi-Lo) - Practice Tool',
                 mainTitle: 'Blackjack Card Counting (Hi-Lo)',
                 currentCountLabel: 'Current Count: ',
                 cardsLeftLabel: 'Cards Left: ',
@@ -197,7 +174,7 @@
             }
         };
 
-        let currentLang = 'ko';
+        let currentLang = 'en';
         let deck = [];
         let count = 0;
         let cardsDrawn = 0;
@@ -318,7 +295,7 @@
             navigator.clipboard.writeText(address).then(() => {
                 alert(translations[currentLang].copySuccess);
             }).catch(() => {
-                alert('복사에 실패했습니다. 주소를 수동으로 복사해 주세요.');
+                alert('Failed to copy. Please copy the address manually.');
             });
         }
 
@@ -345,7 +322,7 @@
         document.getElementById('usdtAddress').addEventListener('click', copyAddress);
 
         initializeDeck();
-        setLanguage('ko');
+        setLanguage('en');
     </script>
 </body>
 </html>
